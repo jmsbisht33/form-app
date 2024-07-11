@@ -1,27 +1,46 @@
 import React, { useState } from 'react'
 import CustomInput from './CustomInput';
-
+import { Link, useLocation } from "react-router-dom";
+import { toast } from "react-hot-toast";
 import { useForm } from "react-hook-form";
+import { useMutation } from "@tanstack/react-query";
+import axios from "axios";
+import { signIn, signUp } from '../../utils/utils';
 
 const AuthForm = ({ type }) => {
-
   const {
-    register,
     handleSubmit,
-    watch,
-    formState: {errors}
+    register,
+    formState: {errors},
+    reset
   } = useForm()
 
-  // const onSubmit = (data) => console.log(data);
+  const signUpMutation = useMutation({
+    mutationFn: (newUser) => {
+      return axios.post('http://localhost:5200/api/users/signup', newUser)
+    },
+  });
 
-  const onSubmit = (data) => {
-    // event.preventDefault();
+  const signInMutation = useMutation({
+    mutationFn: (newUser) => {
+      return axios.post('http://localhost:5200/api/users/signin', newUser)
+    },
+  });
+
+  const onSubmit = async (data) => {
     if(type === "sign-up"){
-        console.log('sign-up',data)
+      let res = await signUp(data);
+      if (res !== 'registered successfully') {
+        toast.error(res.response.data.message);
+      } else {
+        reset();
+        toast.success(res);
+      }
     }
 
     if(type === "sign-in"){
-        console.log('sign-in',data)
+      let res = await signIn(data);
+      if(res.name === "AxiosError") toast.error(res.response.data.message);
     }
   }
 
@@ -42,29 +61,47 @@ const AuthForm = ({ type }) => {
               <CustomInput 
                 label="Name"
                 placeholder="Name"
-                register={register}
                 value={"name"}
+                register={register}
+                errors={errors}
               />            
           )}
           <CustomInput 
             label="Email"
             placeholder="Email"
-            register={register}
             value={"email"}
+            register={register}
+            errors={errors}
           />
 
           <CustomInput 
             label="Password"
             placeholder="Password"
-            register={register}
             value={"password"}
+            register={register}
+            errors={errors}
           />
           <button
-            className="btn btn-primary"
+            className="btn bg-bankGradient"
+            disabled={signInMutation.isPending || signInMutation.isPending}
           >
-            Submit
+            {type === 'sign-in' ? 'Login' : 'Sign up'}
           </button>
       </form>
+      <footer className='flex justify-center gap-1'>
+      <p>
+        {type === 'sign-in'
+          ? "Don't have an account?"
+          : "Already have an account?"
+        }
+      </p>
+      <Link
+        to={type === "sign-in" ? '/sign-up' : '/sign-in'}
+        className='text-14 cursor-pointer font-medium text-bankGradient'
+      >
+        {type === 'sign-in' ? 'Sign up' : 'Sign in'}
+      </Link>
+      </footer>
     </section>
   )
 }
